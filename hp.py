@@ -69,18 +69,48 @@ class Win:
                     curses.A_STANDOUT)
         elif i >= self.maxy:
             self.page += 1
-            self.scr.erase()
+            self.updscr()
             self.row = 0
             self.printsubs()
         elif i < 0 and self.page > 0:
             self.page -= 1
-            self.scr.erase()
+            self.updscr()
             self.row = self.maxy-1
             self.printsubs()
         self.updidx()
 
     def updidx(self):
         self.idx = self.page * self.maxy + self.row
+
+    def updscr(self):
+        self.scr.clear()
+
+    def otherkey(self, c):
+        pass
+
+    def actions(self):
+        while True:
+            c = self.scr.getch()
+            if c == ord('q'):
+                self.end()
+                break
+            elif c in (ord('k'), curses.KEY_UP):
+                self.move(self.row-1)
+            elif c in (ord('j'), curses.KEY_DOWN):
+                self.move(self.row+1)
+            elif c in (ord('g'), curses.KEY_HOME):
+                self.move(0)
+            elif c in (ord('G'), curses.KEY_END):
+                if self.len - 1 < self.maxy:    # ha kisebb mint az ablak
+                    self.move(self.len - 1)     # a vegere ugrunk
+                elif self.len - 1 > (self.page+1) * self.maxy:
+                    self.move(self.maxy - 1)    # ha nagyobb az akkor az ablak aljara
+                else:                           # utolso oldal miatt kell
+                    self.move(self.len-1 - self.page*self.maxy)
+            elif c in (ord('r'), ord('R')):
+                self.scr.refresh()
+            else:
+                self.otherkey(c)
 
 class Root(Win):
     def __init__(self, scr):
@@ -96,13 +126,51 @@ class Root(Win):
         self.y = 0
         self.x = 0
 
+    def otherkey(self, c):
+        if c in (ord('f'), curses.KEY_ENTER, 10):
+            self.fetch()
+        elif c in(ord('d'), ord('D')):
+            link = 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
+            dfile = open(re.search(r'file=(.*$)', link).group(1), 'w')
+            dfile.write(urlopen(link).read())
+            dfile.close()
+
+    def fetch(self):
+        self.arch = Archive(root)
+
+        substarty = int(root.maxy * 0.3)
+        substartx = 2
+
+        submaxy = self.arch.lenght + 2
+        if (substarty + submaxy) >= root.maxy:
+            submaxy = root.maxy - substarty - 2
+        dwin = SubWin(
+                root.scr.subwin(submaxy, int(root.maxx * 0.85),
+                    substarty, substartx), self.arch.files)
+
+        if dwin is []:
+            dwin.scr.addstr(1, 1, 'Corrupt archive')
+            self.src.getch()
+            dwin.end()
+        else:
+            dwin.printsubs()
+            dwin.actions()
+
+    def end(self):
+        curses.nocbreak();
+        scr.keypad(0);
+        curses.echo()
+        curses.endwin()
+        sys.exit()
+
+
 class SubWin(Win):
     def __init__(self, scr, list):
         self.scr = scr
         self.list = list
         self.maxy, self.maxx = self.scr.getmaxyx()
         self.maxx -= 1
-        self.maxy -= 1
+        self.maxy -= 2
         self.scr.clear()
         self.row = 0
         self.idx = 0
@@ -110,77 +178,75 @@ class SubWin(Win):
         self.len = len(self.list)
         self.y = 1
         self.x = 1
+        self.title = re.search(r'file=(.*$)', root.dl[root.idx]).group(1)
         self.scr.erase()
         self.scr.box()
-        self.scr.addstr(0, 3, 'download')
+        self.scr.addstr(0, 3, self.title)
 
-def fetch():
-    link = 'http://www.hosszupuskasub.com/' + root.dl[root.idx]
-    f = tempfile.NamedTemporaryFile()
-    f.write(urlopen(link).read())
-    zf = None
-    files = []
-    isZip = False
-    if re.search('\.zip$', root.dl[root.idx]):
-        zf = zipfile.ZipFile(f)
-        files = zf.namelist()
-        isZip = True
-    elif re.search('\.rar$', root.dl[root.idx]):
-        files = os.popen('unrar v %s | awk \'BEGIN { s=0; f=1; } \
-                /^---/ {s++; if(s>1) exit 0; next; } \
-                s==1 && f++ %% 2 { sub("^ ", ""); print; }\'' % f.name).read().split('\n')
-#         files = os.popen('unrar lb %s' % f.name).read().split('\n')
-        files.pop()
+    def updscr(self):
+        self.scr.clear()
+        self.scr.box()
+        self.scr.addstr(0, 3, self.title)
 
-    submaxy = submaxy = len(files) + 2
-    if len(files)+2 > root.maxy:
-        submaxy = root.maxy - 2
-    dwin = SubWin(
-            root.scr.subwin(submaxy, int(root.maxx * 0.85), 10, 2), files)
-    dwin.scr.addstr(0, 3, re.search(r'file=(.*$)', root.dl[root.idx]).group(1))
-    dwin.printsubs()
-
-    while True:
-        c = dwin.scr.getch()
-        if c == ord('q'):
-            break
-        elif c in (ord('k'), curses.KEY_UP):
-            dwin.move(dwin.row-1)
-        elif c in (ord('j'), curses.KEY_DOWN):
-            dwin.move(dwin.row+1)
-        elif c in (ord('g'), curses.KEY_HOME):
-            dwin.move(0)
-        elif c in (ord('G'), curses.KEY_END):
-            if dwin.len - 1 < dwin.maxy:
-                dwin.move(dwin.len - 1)
-            elif dwin.len - 1 > (dwin.page+1) * dwin.maxy:
-                dwin.move(dwin.maxy - 1)
-            else:
-                dwin.move(dwin.len-1 - dwin.page*dwin.maxy)
-        elif c in (ord('e'), ord('s'), curses.KEY_ENTER, 10):
-            if isZip:
-                zf.extract(files[dwin.maxy*dwin.page + dwin.row])
-            else:
-                os.system('unrar e -inul %s "%s"' % (f.name, files[dwin.idx]))
+    def otherkey(self, c):
+        if c in (ord('e'), ord('s'), curses.KEY_ENTER, 10):
+            root.arch.extract(self.maxy*self.page + self.row)
         elif c in (ord('a'), ord('A')):
-            if isZip:
-                zf.extractall()
-            else:
-                os.system('unrar e -inul %s' % f.name)
-        elif c in (ord('r'), ord('R')):
-            dwin.scr.refresh()
-    dwin.scr.erase()
-    root.printsubs()
+            root.arch.extractall()
 
-    if zf is not None:
-        zf.close()
-    f.close()
+    def end(self):
+        root.arch.close()
+        self.scr.erase()
+        root.printsubs()
 
-def end():
-    curses.nocbreak();
-    scr.keypad(0);
-    curses.echo()
-    curses.endwin()
+class Archive:
+    def __init__(self, root):
+        self.files = []
+        link = 'http://www.hosszupuskasub.com/' + root.dl[root.idx]
+        self.f = tempfile.NamedTemporaryFile()
+        self.f.write(urlopen(link).read())
+        self.zf = None
+        self.isZip = False
+
+        rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
+                           \s+                               # seperator
+                           (?P<time>\d{2}:\d{2}:\d{2})       # time
+                           \s+                               # seperator
+                           (?P<attr>.{5})                    # attributes
+                           \s+                               # seperator
+                           (?P<size>\d+)                     # size
+                           \s+                               # seperator
+                           (?P<csize>\d+)                    # compressed size
+                           \s+                               # seperator
+                           (?P<name>.*)                      # name
+                           """, re.X)
+
+        if re.search('\.zip$', link):
+            self.zf = zipfile.ZipFile(self.f)
+            self.files = self.zf.namelist()
+            self.isZip = True
+        elif re.search('\.rar$', link):
+            self.files = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
+
+        self.lenght = len(self.files)
+
+    def extract(self, idx):
+        if self.isZip:
+            self.zf.extract(self.files[idx])
+        else:
+            os.system('7z x %s "%s" > /dev/null' % (self.f.name, self.files[idx]))
+
+    def extractall(self):
+        if self.isZip:
+            self.zf.extractall()
+        else:
+            os.system('7z x %s > /dev/null' % self.f.name)
+
+    def close(self):
+        if self.zf is not None:
+            self.zf.close()
+        self.f.close()
+
 
 root = Root(scr)
 
@@ -195,28 +261,6 @@ for a in html.cssselect('a#menu'):
 if root.list:
     root.printsubs()
 else:
-    end()
-    sys.exit()
+    root.end()
 
-while True:
-    c = scr.getch()
-    if c == ord('q'):
-        end()
-        break
-    elif c in (ord('k'), curses.KEY_UP):
-        root.move(root.row-1)
-    elif c in (ord('j'), curses.KEY_DOWN):
-        root.move(root.row+1)
-    elif c in (ord('g'), curses.KEY_HOME):
-        root.move(0)
-    elif c in (ord('G'), curses.KEY_END):
-        if root.len - 1 < root.maxy:    # ha kisebb mint az ablak
-            root.move(root.len - 1)     # a vegere ugrunk
-        elif root.len - 1 > (root.page+1) * root.maxy:
-            root.move(root.maxy - 1)    # ha nagyobb az akkor az ablak aljara
-        else:                           # utolso oldal miatt kell
-            root.move(root.len-1 - root.page*root.maxy)
-    elif c in (ord('f'), curses.KEY_ENTER, 10):
-        fetch()
-    elif c in (ord('r'), ord('R')):
-        scr.refresh()
+root.actions()

@@ -6,12 +6,18 @@ import sys, os, re
 import curses
 import tempfile, zipfile
 
-if sys.argv[1]:
+if 1 < len(sys.argv):
     cim = ' '.join(sys.argv[1:])
 else:
     cim = raw_input('cim: ')
 
-url = 'http://www.hosszupuskasub.com/index.php?cim=%s' % cim
+if cim in ('v', 'V'):
+    url = 'http://www.hosszupuskasub.com/index.php?serial=v2009'
+elif cim == 'supernatral':
+    url = 'http://www.hosszupuskasub.com/index.php?serial=supernatural'
+else:
+    url = 'http://www.hosszupuskasub.com/index.php?cim=%s' % cim
+
 subs = []
 row = 0
 page = 0
@@ -208,7 +214,7 @@ while True:
             root.move(root.len - 1)     # a vegere ugrunk
         elif root.len - 1 > (root.page+1) * root.maxy:
             root.move(root.maxy - 1)    # ha nagyobb az akkor az ablak aljara
-        else:   # utolso oldal miatt kell
+        else:                           # utolso oldal miatt kell
             root.move(root.len-1 - root.page*root.maxy)
     elif c in (ord('f'), curses.KEY_ENTER, 10):
         fetch()

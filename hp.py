@@ -188,7 +188,7 @@ class SubWin(Win):  #{{{
         self.list  = list
         self.maxy, self.maxx = self.scr.getmaxyx()
         self.maxx -= 1
-        self.maxy -= 2
+        self.maxy -= 1
         self.scr.clear()
         self.row   = 0
         self.idx   = 0

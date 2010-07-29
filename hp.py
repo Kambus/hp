@@ -28,6 +28,20 @@ scr.keypad(1)
 c = urlopen(url).read()
 html = fromstring(c)
 
+rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
+                   \s+                               # seperator
+                   (?P<time>\d{2}:\d{2}:\d{2})       # time
+                   \s+                               # seperator
+                   (?P<attr>.{5})                    # attributes
+                   \s+                               # seperator
+                   (?P<size>\d+)                     # size
+                   \s+                               # seperator
+                   (?P<csize>\d+)                    # compressed size
+                   \s+                               # seperator
+                   (?P<name>.*)                      # name
+                   """, re.X)
+
+
 class Win:  #{{{
     def __init__(self, scr):
         self.scr = scr
@@ -135,16 +149,21 @@ class Root(Win):    #{{{
             dfile.close()
 
     def fetch(self):
-        self.arch = Archive(root)
+        link      = 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
 
-        substarty = int(root.maxy * 0.3)
+        if re.search('\.zip$', link):
+            self.arch = ZipArch(link)
+        elif re.search('\.rar$', link):
+            self.arch = RarArch(link)
+
+        substarty = int(self.maxy * 0.3)
         substartx = 2
 
         submaxy = self.arch.lenght + 2
-        if (substarty + submaxy) >= root.maxy:
-            submaxy = root.maxy - substarty - 2
+        if (substarty + submaxy) >= self.maxy:
+            submaxy = self.maxy - substarty - 2
         dwin = SubWin(
-                root.scr.subwin(submaxy, int(root.maxx * 0.85),
+                self.scr.subwin(submaxy, int(self.maxx * 0.85),
                     substarty, substartx), self.arch.files)
 
         if dwin is []:
@@ -199,52 +218,41 @@ class SubWin(Win):  #{{{
         root.printsubs()
 #}}}
 
-class Archive:  #{{{
-    def __init__(self, root):
+class ZipArch:  #{{{
+    def __init__(self, url):
         self.files = []
-        link       = 'http://www.hosszupuskasub.com/' + root.dl[root.idx]
         self.f     = tempfile.NamedTemporaryFile()
-        self.f.write(urlopen(link).read())
-        self.zf    = None
-        self.isZip = False
-
-        rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
-                           \s+                               # seperator
-                           (?P<time>\d{2}:\d{2}:\d{2})       # time
-                           \s+                               # seperator
-                           (?P<attr>.{5})                    # attributes
-                           \s+                               # seperator
-                           (?P<size>\d+)                     # size
-                           \s+                               # seperator
-                           (?P<csize>\d+)                    # compressed size
-                           \s+                               # seperator
-                           (?P<name>.*)                      # name
-                           """, re.X)
-
-        if re.search('\.zip$', link):
-            self.zf = zipfile.ZipFile(self.f)
-            self.files = self.zf.namelist()
-            self.isZip = True
-        elif re.search('\.rar$', link):
-            self.files = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
-
+        self.f.write(urlopen(url).read())
+        self.zf    = zipfile.ZipFile(self.f)
+        self.files = self.zf.namelist()
         self.lenght = len(self.files)
 
     def extract(self, idx):
-        if self.isZip:
-            self.zf.extract(self.files[idx])
-        else:
-            os.system('7z x %s "%s" > /dev/null' % (self.f.name, self.files[idx]))
+        self.zf.extract(self.files[idx])
 
     def extractall(self):
-        if self.isZip:
-            self.zf.extractall()
-        else:
-            os.system('7z x %s > /dev/null' % self.f.name)
+        self.zf.extractall()
 
     def close(self):
-        if self.zf is not None:
-            self.zf.close()
+        self.zf.close()
+        self.f.close()
+#}}}
+
+class RarArch:  #{{{
+    def __init__(self, url):
+        self.files = []
+        self.f     = tempfile.NamedTemporaryFile()
+        self.f.write(urlopen(url).read())
+        self.files = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
+        self.lenght = len(self.files)
+
+    def extract(self, idx):
+        os.system('7z x %s "%s" > /dev/null' % (self.f.name, self.files[idx]))
+
+    def extractall(self):
+        os.system('7z x %s > /dev/null' % self.f.name)
+
+    def close(self):
         self.f.close()
 #}}}
 

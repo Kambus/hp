@@ -19,8 +19,6 @@ else:
     url = 'http://www.hosszupuskasub.com/index.php?cim=%s' % cim
 
 subs = []
-row = 0
-page = 0
 
 scr = curses.initscr()
 curses.noecho()
@@ -30,18 +28,18 @@ scr.keypad(1)
 c = urlopen(url).read()
 html = fromstring(c)
 
-class Win:
+class Win:  #{{{
     def __init__(self, scr):
         self.scr = scr
         self.scr.clear()
         self.list = []
         self.maxy, self.maxx = self.scr.getmaxyx()
-        self.row = 0        # current row
-        self.idx = 0        # current sub
+        self.row  = 0           # current row
+        self.idx  = 0           # current sub
         self.page = 0
-        self.len = 0
-        self.y = 0          # top border
-        self.x = 0          # left border
+        self.len  = 0
+        self.y    = 0           # top border
+        self.x    = 0           # left border
 
     def printsubs(self):
         lrow = 0
@@ -111,20 +109,21 @@ class Win:
                 self.scr.refresh()
             else:
                 self.otherkey(c)
+#}}}
 
-class Root(Win):
+class Root(Win):    #{{{
     def __init__(self, scr):
-        self.scr = scr
+        self.scr  = scr
         self.list = []
-        self.dl = []
+        self.dl   = []
         self.maxy, self.maxx = self.scr.getmaxyx()
         self.scr.clear()
-        self.row = 0
-        self.idx = 0
+        self.row  = 0
+        self.idx  = 0
         self.page = 0
-        self.len = 0
-        self.y = 0
-        self.x = 0
+        self.len  = 0
+        self.y    = 0
+        self.x    = 0
 
     def otherkey(self, c):
         if c in (ord('f'), curses.KEY_ENTER, 10):
@@ -162,22 +161,22 @@ class Root(Win):
         curses.echo()
         curses.endwin()
         sys.exit()
+#}}}
 
-
-class SubWin(Win):
+class SubWin(Win):  #{{{
     def __init__(self, scr, list):
-        self.scr = scr
-        self.list = list
+        self.scr   = scr
+        self.list  = list
         self.maxy, self.maxx = self.scr.getmaxyx()
         self.maxx -= 1
         self.maxy -= 2
         self.scr.clear()
-        self.row = 0
-        self.idx = 0
-        self.page = 0
-        self.len = len(self.list)
-        self.y = 1
-        self.x = 1
+        self.row   = 0
+        self.idx   = 0
+        self.page  = 0
+        self.len   = len(self.list)
+        self.y     = 1
+        self.x     = 1
         self.title = re.search(r'file=(.*$)', root.dl[root.idx]).group(1)
         self.scr.erase()
         self.scr.box()
@@ -198,14 +197,15 @@ class SubWin(Win):
         root.arch.close()
         self.scr.erase()
         root.printsubs()
+#}}}
 
-class Archive:
+class Archive:  #{{{
     def __init__(self, root):
         self.files = []
-        link = 'http://www.hosszupuskasub.com/' + root.dl[root.idx]
-        self.f = tempfile.NamedTemporaryFile()
+        link       = 'http://www.hosszupuskasub.com/' + root.dl[root.idx]
+        self.f     = tempfile.NamedTemporaryFile()
         self.f.write(urlopen(link).read())
-        self.zf = None
+        self.zf    = None
         self.isZip = False
 
         rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
@@ -246,14 +246,15 @@ class Archive:
         if self.zf is not None:
             self.zf.close()
         self.f.close()
-
+#}}}
 
 root = Root(scr)
 
 for a in html.cssselect('a#menu'):
     if 'download.php' in a.get('href'):
         root.list.append(' - '.join((
-            re.search('<br>(.+?)<\/td>', tostring(a.getparent().getparent().getchildren()[1])).group(1),
+            re.search('<br>(.+?)<\/td>',
+                tostring(a.getparent().getparent().getchildren()[1])).group(1),
             a.getparent().getparent().getchildren()[2].find('img').attrib['alt'])))
         root.dl.append(a.get('href'))
         root.len += 1

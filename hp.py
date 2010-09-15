@@ -18,13 +18,6 @@ elif cim == 'supernatral':
 else:
     url = 'http://www.hosszupuskasub.com/index.php?cim=%s' % cim
 
-subs = []
-
-scr = curses.initscr()
-curses.noecho()
-curses.cbreak()
-scr.keypad(1)
-
 c = urlopen(url).read()
 html = fromstring(c)
 
@@ -139,6 +132,10 @@ class Root(Win):    #{{{
         self.y    = 0
         self.x    = 0
 
+        curses.noecho()
+        curses.cbreak()
+        self.scr.keypad(1)
+
     def otherkey(self, c):
         if c in (ord('f'), curses.KEY_ENTER, 10):
             self.fetch()
@@ -166,7 +163,7 @@ class Root(Win):    #{{{
                 self.scr.subwin(submaxy, int(self.maxx * 0.85),
                     substarty, substartx), self.arch.files)
 
-        if dwin is []:
+        if self.arch.files is []:
             dwin.scr.addstr(1, 1, 'Corrupt archive')
             self.src.getch()
             dwin.end()
@@ -176,7 +173,7 @@ class Root(Win):    #{{{
 
     def end(self):
         curses.nocbreak();
-        scr.keypad(0);
+        self.scr.keypad(0);
         curses.echo()
         curses.endwin()
         sys.exit()
@@ -220,11 +217,10 @@ class SubWin(Win):  #{{{
 
 class ZipArch:  #{{{
     def __init__(self, url):
-        self.files = []
-        self.f     = tempfile.NamedTemporaryFile()
+        self.f      = tempfile.NamedTemporaryFile()
         self.f.write(urlopen(url).read())
-        self.zf    = zipfile.ZipFile(self.f)
-        self.files = self.zf.namelist()
+        self.zf     = zipfile.ZipFile(self.f)
+        self.files  = self.zf.namelist()
         self.lenght = len(self.files)
 
     def extract(self, idx):
@@ -240,10 +236,9 @@ class ZipArch:  #{{{
 
 class RarArch:  #{{{
     def __init__(self, url):
-        self.files = []
-        self.f     = tempfile.NamedTemporaryFile()
+        self.f      = tempfile.NamedTemporaryFile()
         self.f.write(urlopen(url).read())
-        self.files = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
+        self.files  = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
         self.lenght = len(self.files)
 
     def extract(self, idx):
@@ -256,7 +251,7 @@ class RarArch:  #{{{
         self.f.close()
 #}}}
 
-root = Root(scr)
+root = Root(curses.initscr())
 
 for a in html.cssselect('a#menu'):
     if 'download.php' in a.get('href'):

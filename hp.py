@@ -103,9 +103,9 @@ class Win:  #{{{
                 self.move(self.row-1)
             elif c in (ord('j'), curses.KEY_DOWN):
                 self.move(self.row+1)
-            elif c in (ord('g'), curses.KEY_HOME):
+            elif c in (ord('g'), curses.KEY_HOME, curses.KEY_PPAGE):
                 self.move(0)
-            elif c in (ord('G'), curses.KEY_END):
+            elif c in (ord('G'), curses.KEY_END, curses.KEY_NPAGE):
                 if self.len - 1 < self.maxy:    # ha kisebb mint az ablak
                     self.move(self.len - 1)     # a vegere ugrunk
                 elif self.len - 1 > (self.page+1) * self.maxy:
@@ -197,6 +197,7 @@ class SubWin(Win):  #{{{
         self.scr.erase()
         self.scr.box()
         self.scr.addstr(0, 3, self.title)
+        self.scr.keypad(1)
 
     def updscr(self):
         self.scr.clear()

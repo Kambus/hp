@@ -109,7 +109,7 @@ class Win:  #{{{
                 if self.len - 1 < self.maxy:    # ha kisebb mint az ablak
                     self.move(self.len - 1)     # a vegere ugrunk
                 elif self.len - 1 > (self.page+1) * self.maxy:
-                    self.move(self.maxy - 1)    # ha nagyobb az akkor az ablak aljara
+                    self.move(self.maxy - 1)    # ha nagyobb akkor az ablak aljara
                 else:                           # utolso oldal miatt kell
                     self.move(self.len-1 - self.page*self.maxy)
             elif c in (ord('r'), ord('R')):

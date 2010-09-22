@@ -161,9 +161,9 @@ class Root(Win):    #{{{
             submaxy = self.maxy - substarty - 2
         dwin = SubWin(
                 self.scr.subwin(submaxy, int(self.maxx * 0.85),
-                    substarty, substartx), self.arch.files)
+                    substarty, substartx), self.arch, self.printsubs)
 
-        if self.arch.files is []:
+        if dwin.list is []:
             dwin.scr.addstr(1, 1, 'Corrupt archive')
             self.src.getch()
             dwin.end()
@@ -180,9 +180,10 @@ class Root(Win):    #{{{
 #}}}
 
 class SubWin(Win):  #{{{
-    def __init__(self, scr, list):
+    def __init__(self, scr, arch, ppsubs):
         self.scr   = scr
-        self.list  = list
+        self.arch  = arch
+        self.list  = arch.files
         self.maxy, self.maxx = self.scr.getmaxyx()
         self.maxx -= 1
         self.maxy -= 1
@@ -197,6 +198,7 @@ class SubWin(Win):  #{{{
         self.scr.erase()
         self.scr.box()
         self.scr.addstr(0, 3, self.title)
+        self.parent_printsubs = ppsubs
         self.scr.keypad(1)
 
     def updscr(self):
@@ -206,14 +208,14 @@ class SubWin(Win):  #{{{
 
     def otherkey(self, c):
         if c in (ord('e'), ord('s'), curses.KEY_ENTER, 10):
-            root.arch.extract(self.maxy*self.page + self.row)
+            self.arch.extract(self.maxy*self.page + self.row)
         elif c in (ord('a'), ord('A')):
-            root.arch.extractall()
+            self.arch.extractall()
 
     def end(self):
-        root.arch.close()
+        self.arch.close()
         self.scr.erase()
-        root.printsubs()
+        self.parent_printsubs()
 #}}}
 
 class ZipArch:  #{{{

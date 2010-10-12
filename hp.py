@@ -256,7 +256,7 @@ class RarArch:  #{{{
 
 root = Root(curses.initscr())
 
-for a in html.cssselect('a#menu'):
+for a in html.cssselect('td > a'):
     if 'download.php' in a.get('href'):
         root.list.append(' - '.join((
             re.search('<br>(.+?)<\/td>',

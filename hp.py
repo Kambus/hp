@@ -12,11 +12,11 @@ else:
     cim = raw_input('cim: ')
 
 if cim in ('v', 'V'):
-    url = 'http://www.hosszupuskasub.com/index.php?serial=v2009'
+    url = 'http://hosszupuskasub.com/sorozatok.php?serial=v2009'
 elif cim == 'supernatral':
-    url = 'http://www.hosszupuskasub.com/index.php?serial=supernatural'
+    url = 'http://hosszupuskasub.com/sorozatok.php?serial=supernatural'
 else:
-    url = 'http://www.hosszupuskasub.com/index.php?cim=%s' % cim
+    url = 'http://hosszupuskasub.com/sorozatok.php?cim=%s' % cim
 
 c = urlopen(url).read()
 html = fromstring(c)

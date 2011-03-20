@@ -49,14 +49,12 @@ class Win:  #{{{
         self.x    = 0           # left border
 
     def printsubs(self):
-        lrow = 0
         self.updidx()
         downl = self.page * self.maxy
         upl = (self.page + 1) * self.maxy
 
-        for sub in self.list[downl:upl]:
-            self.scr.addstr(self.y + lrow, self.x, sub)
-            lrow += 1
+        for i, sub in enumerate(self.list[downl:upl]):
+            self.scr.addstr(self.y + i, self.x, sub)
 
         self.scr.addstr(self.y + self.row, self.x,
                 self.list[self.idx], curses.A_STANDOUT)

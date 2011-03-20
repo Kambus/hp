@@ -48,16 +48,23 @@ class Win:  #{{{
         self.y    = 0           # top border
         self.x    = 0           # left border
 
+    def addline(self, **kwargs):
+        y = kwargs.get('y', self.y + self.row)
+        x = kwargs.get('x', self.x)
+        str = kwargs.get('str', self.list[self.idx])
+        attr = kwargs.get('attr', curses.A_NORMAL)
+
+        self.scr.addstr(y, x, str, attr)
+
     def printsubs(self):
         self.updidx()
         downl = self.page * self.maxy
         upl = (self.page + 1) * self.maxy
 
         for i, sub in enumerate(self.list[downl:upl]):
-            self.scr.addstr(self.y + i, self.x, sub)
+            self.addline(y=self.y + i, str=sub)
 
-        self.scr.addstr(self.y + self.row, self.x,
-                self.list[self.idx], curses.A_STANDOUT)
+        self.addline(attr=curses.A_STANDOUT)
         self.scr.refresh()
 
     def move(self, i):
@@ -65,11 +72,10 @@ class Win:  #{{{
         maxrow = self.len - self.page * self.maxy - 1
 
         if i >= 0 and i <= maxrow and i < self.maxy:
-            self.scr.addstr(self.y + self.row, self.x, self.list[self.idx])
+            self.addline()
             self.row = i
             self.updidx()
-            self.scr.addstr(self.y + self.row, self.x, self.list[self.idx],
-                    curses.A_STANDOUT)
+            self.addline(attr=curses.A_STANDOUT)
         elif i >= self.maxy:
             self.page += 1
             self.updscr()

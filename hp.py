@@ -254,21 +254,22 @@ class RarArch:  #{{{
         self.f.close()
 #}}}
 
-def getlang(src):
+def getlang(a):
+    src = a.getparent().getparent().getchildren()[2].find('img').attrib['src']
     if src == 'flags/1.gif':
         return 'magyar'
     elif src == 'flags/2.gif':
         return 'angol'
 
+def gettitle(a):
+    src = tostring(a.getparent().getparent().getchildren()[1]).decode('utf-8')
+    return re.search('<br>(.+?)<\/td>', src).group(1)
 
 root = Root(curses.initscr())
 
 for a in html.cssselect('td > a'):
     if 'download.php' in a.get('href'):
-        root.list.append(' - '.join((
-            re.search('<br>(.+?)<\/td>',
-                tostring(a.getparent().getparent().getchildren()[1]).decode('utf-8')).group(1),
-            getlang(a.getparent().getparent().getchildren()[2].find('img').attrib['src']))))
+        root.list.append(' - '.join((gettitle(a), getlang(a))))
         root.dl.append(a.get('href'))
         root.len += 1
 

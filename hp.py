@@ -57,7 +57,6 @@ class Win:  #{{{
         self.scr.addstr(y, x, str, attr)
 
     def printsubs(self):
-        self.updidx()
         downl = self.page * self.maxy
         upl = (self.page + 1) * self.maxy
 
@@ -68,27 +67,25 @@ class Win:  #{{{
         self.scr.refresh()
 
     def move(self, i):
-        self.updidx()
-        maxrow = self.len - self.page * self.maxy - 1
+        lastrow = self.len - self.page * self.maxy - 1
 
-        if i >= 0 and i <= maxrow and i < self.maxy:
+        if i >= 0 and i <= lastrow and i < self.maxy:
             self.addline()
-            self.row = i
-            self.updidx()
+            self.setrow(i)
             self.addline(attr=curses.A_STANDOUT)
         elif i >= self.maxy:
             self.page += 1
             self.updscr()
-            self.row = 0
+            self.setrow(0)
             self.printsubs()
         elif i < 0 and self.page > 0:
             self.page -= 1
             self.updscr()
-            self.row = self.maxy-1
+            self.setrow(self.maxy-1)
             self.printsubs()
-        self.updidx()
 
-    def updidx(self):
+    def setrow(self, n):
+        self.row = n
         self.idx = self.page * self.maxy + self.row
 
     def updscr(self):

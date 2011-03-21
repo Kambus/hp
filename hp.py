@@ -66,10 +66,13 @@ class Win:  #{{{
         self.addline(attr=curses.A_STANDOUT)
         self.scr.refresh()
 
-    def move(self, i):
-        lastrow = self.len - self.page * self.maxy - 1
+    def lastrow(self):
+        if self.maxy * (self.page+1) < self.len:
+            return self.maxy - 1
+        return self.len - self.page * self.maxy - 1
 
-        if i >= 0 and i <= lastrow and i < self.maxy:
+    def move(self, i):
+        if i >= 0 and i <= self.lastrow():
             self.addline()
             self.setrow(i)
             self.addline(attr=curses.A_STANDOUT)
@@ -107,12 +110,7 @@ class Win:  #{{{
             elif c in (ord('g'), curses.KEY_HOME, curses.KEY_PPAGE):
                 self.move(0)
             elif c in (ord('G'), curses.KEY_END, curses.KEY_NPAGE):
-                if self.len - 1 < self.maxy:    # ha kisebb mint az ablak
-                    self.move(self.len - 1)     # a vegere ugrunk
-                elif self.len - 1 > (self.page+1) * self.maxy:
-                    self.move(self.maxy - 1)    # ha nagyobb akkor az ablak aljara
-                else:                           # utolso oldal miatt kell
-                    self.move(self.len-1 - self.page*self.maxy)
+                self.move(self.lastrow())
             elif c in (ord('r'), ord('R')):
                 self.scr.refresh()
             else:

@@ -13,8 +13,8 @@ else:
 
 if cim in ('v', 'V'):
     url = 'http://hosszupuskasub.com/sorozatok.php?serial=v2009'
-elif cim == 'supernatral':
-    url = 'http://hosszupuskasub.com/sorozatok.php?serial=supernatural'
+elif cim == 'sgu':
+    url = 'http://hosszupuskasub.com/sorozatok.php?serial=stargateuniverse'
 else:
     url = 'http://hosszupuskasub.com/sorozatok.php?cim=%s' % cim
 

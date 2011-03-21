@@ -137,17 +137,20 @@ class Root(Win):    #{{{
         curses.cbreak()
         self.scr.keypad(1)
 
+    def getlink(self):
+        return 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
+
     def otherkey(self, c):
         if c in (ord('f'), curses.KEY_ENTER, 10):
             self.fetch()
         elif c in(ord('d'), ord('D')):
-            link = 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
+            link = self.getlink()
             dfile = open(re.search(r'file=(.*$)', link).group(1), 'w')
             dfile.write(urlopen(link).read())
             dfile.close()
 
     def fetch(self):
-        link      = 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
+        link      = self.getlink()
 
         if re.search('\.zip$', link):
             self.arch = ZipArch(link)
@@ -195,7 +198,7 @@ class SubWin(Win):  #{{{
         self.len   = len(self.list)
         self.y     = 1
         self.x     = 1
-        self.title = re.search(r'file=(.*$)', root.dl[root.idx]).group(1)
+        self.title = re.search(r'file=(.*$)', root.getlink()).group(1)
         self.scr.erase()
         self.scr.box()
         self.scr.addstr(0, 3, self.title)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from lxml.html import fromstring, tostring
 from urllib2 import urlopen
@@ -120,6 +120,7 @@ class Win:  #{{{
 class Root(Win):    #{{{
     def __init__(self, scr):
         self.scr  = scr
+        self.arch = None
         self.list = []
         self.dl   = []
         self.maxy, self.maxx = self.scr.getmaxyx()
@@ -136,14 +137,15 @@ class Root(Win):    #{{{
         self.scr.keypad(1)
 
     def getlink(self):
-        return 'http://www.hosszupuskasub.com/' + self.dl[self.idx]
+        path = re.sub(r'.*file=(.*$)', r'!!feliratok/\1', self.dl[self.idx])
+        return 'http://www.hosszupuskasub.com/' + path
 
     def otherkey(self, c):
         if c in (ord('f'), curses.KEY_ENTER, 10):
             self.fetch()
         elif c in(ord('d'), ord('D')):
             link = self.getlink()
-            dfile = open(re.search(r'file=(.*$)', link).group(1), 'w')
+            dfile = open(link.rsplit('/', 1)[1], 'w')
             dfile.write(urlopen(link).read())
             dfile.close()
 
@@ -196,7 +198,7 @@ class SubWin(Win):  #{{{
         self.len   = len(self.list)
         self.y     = 1
         self.x     = 1
-        self.title = re.search(r'file=(.*$)', root.getlink()).group(1)
+        self.title = root.getlink().rsplit('/', 1)[1]
         self.scr.erase()
         self.scr.box()
         self.scr.addstr(0, 3, self.title)
@@ -269,11 +271,10 @@ def gettitle(a):
 
 root = Root(curses.initscr())
 
-for a in html.cssselect('td > a'):
-    if 'download.php' in a.get('href'):
-        root.list.append(' - '.join((gettitle(a), getlang(a))))
-        root.dl.append(a.get('href'))
-        root.len += 1
+for a in html.cssselect('td > a[href^=download]'):
+    root.list.append(' - '.join((gettitle(a), getlang(a))))
+    root.dl.append(a.get('href'))
+    root.len += 1
 
 if root.list:
     root.printsubs()

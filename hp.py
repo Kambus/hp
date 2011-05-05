@@ -245,6 +245,7 @@ class RarArch:  #{{{
     def __init__(self, url):
         self.f      = tempfile.NamedTemporaryFile()
         self.f.write(urlopen(url).read())
+        self.f.flush()
         self.files  = [rarr.search(i).group('name') for i in filter(rarr.match, os.popen('7z l %s' % self.f.name))]
         self.lenght = len(self.files)
 

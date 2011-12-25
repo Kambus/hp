@@ -11,15 +11,7 @@ if 1 < len(sys.argv):
 else:
     cim = raw_input('cim: ')
 
-if cim in ('v', 'V'):
-    url = 'http://hosszupuskasub.com/sorozatok.php?serial=v2009'
-elif cim == 'sgu':
-    url = 'http://hosszupuskasub.com/sorozatok.php?serial=stargateuniverse'
-else:
-    url = 'http://hosszupuskasub.com/sorozatok.php?cim=%s' % cim
-
-c = urlopen(url).read()
-html = fromstring(c)
+baseurl = 'http://hosszupuskasub.com/'
 
 rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
                    \s+                               # seperator
@@ -33,7 +25,6 @@ rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
                    \s+                               # seperator
                    (?P<name>.*)                      # name
                    """, re.X)
-
 
 class Win:  #{{{
     def __init__(self, scr):
@@ -271,12 +262,46 @@ def gettitle(a):
     src = tostring(a.getparent().getparent().getchildren()[1]).decode('utf-8')
     return re.search('<br>(.+?)<\/td>', src).group(1)
 
+def getpage(url):
+    c = urlopen(url).read()
+    return fromstring(c)
+
+def hpsearch(q, s):
+    """hpsearch(q, s) --> bool
+
+    Return True if words in q are found in s, False otherwise."""
+    words = q.lower().split()
+    twords = s.lower().split()
+    hits = {}
+    for tw in twords:
+        for w in words:
+            if w in tw:
+                hits[w] = True
+    if 'and' in words and '&' in twords:    # check for '&' as and
+        hits['and'] = True
+    return len(words) <= len(hits)
+
+html = getpage(baseurl)
+
+sorozatok =[{'id': o.get('value'), 'title': o.text} for o in html.cssselect('select[name=sorozatid] > option')[1:]]
+
+hits = filter(lambda x: hpsearch(cim, x['title']), sorozatok)
+
+# for hit in hits:
+#     print "%s --> %s" % (hit['title'], hit['id'])
+
+if not hits:
+    print "Nincs talalat a kovetkezo kifejezesre:", cim
+    sys.exit(0)
+
 root = Root(curses.initscr())
 
-for a in html.cssselect('td > a[href^=download]'):
-    root.list.append(' - '.join((gettitle(a), getlang(a))))
-    root.dl.append(a.get('href'))
-    root.len += 1
+for hit in hits:
+    html = getpage(baseurl + '/kereso.php?sorozatid=' + hit['id'])
+    for a in html.cssselect('td > a[href^=download]'):
+        root.list.append(' - '.join((gettitle(a), getlang(a))))
+        root.dl.append(a.get('href'))
+        root.len += 1
 
 if root.list:
     root.printsubs()

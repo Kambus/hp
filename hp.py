@@ -51,17 +51,17 @@ class Win:  #{{{
     def addline(self, **kwargs):
         y = kwargs.get('y', self.y + self.row)
         x = kwargs.get('x', self.x)
-        str = kwargs.get('str', self.list[self.idx])
+        title = kwargs.get('title', self.list[self.idx])
         attr = kwargs.get('attr', curses.A_NORMAL)
 
-        self.scr.addstr(y, x, str, attr)
+        self.scr.addstr(y, x, title[:self.maxx], attr)
 
     def printsubs(self):
         downl = self.page * self.maxy
         upl = (self.page + 1) * self.maxy
 
         for i, sub in enumerate(self.list[downl:upl]):
-            self.addline(y=self.y + i, str=sub)
+            self.addline(y=self.y + i, title=sub)
 
         self.addline(attr=curses.A_STANDOUT)
         self.scr.refresh()
@@ -189,8 +189,8 @@ class SubWin(Win):  #{{{
         self.arch  = arch
         self.list  = arch.files
         self.maxy, self.maxx = self.scr.getmaxyx()
-        self.maxx -= 1
-        self.maxy -= 1
+        self.maxx -= 2
+        self.maxy -= 2
         self.scr.clear()
         self.row   = 0
         self.idx   = 0

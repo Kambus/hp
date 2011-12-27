@@ -72,11 +72,12 @@ class Win:  #{{{
         return self.len - self.page * self.maxy - 1
 
     def move(self, i):
-        if i >= 0 and i <= self.lastrow():
+        isnextpage = self.maxy * (self.page+1) < self.len
+        if 0 <= i <= self.lastrow():
             self.addline()
             self.setrow(i)
             self.addline(attr=curses.A_STANDOUT)
-        elif i >= self.maxy:
+        elif i >= self.maxy and isnextpage:
             self.page += 1
             self.updscr()
             self.setrow(0)

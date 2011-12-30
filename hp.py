@@ -5,6 +5,7 @@ from urllib2 import urlopen
 import sys, os, re
 import curses, getopt
 import tempfile, zipfile
+import json
 
 rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
                    \s+                               # seperator
@@ -276,28 +277,48 @@ def hpsearch(q, s):
 
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "de")
+    opts, args = getopt.getopt(sys.argv[1:], "dec")
 except:
     print str(err)
     sys.exit(2)
 
 debug = None
 exact = None
+cacheopt = None
+
 for o, a in opts:
     if o == '-d':
         debug = True
     elif o == '-e':
         exact = True
+    elif o == '-c':
+        cacheopt = True
+
+cache_dir  = os.path.expanduser('~') + '/.cache/'
+cache_path = cache_dir + '/hp.json'
+
+if not os.path.exists(cache_dir):
+    os.mkdir(cache_dir, 0755)
+
+iscache = os.path.exists(cache_path)
+baseurl = 'http://hosszupuskasub.com/'
+
+
+if not cacheopt or not iscache:
+    html = getpage(baseurl)
+    sorozatok = [{'id': o.get('value'), 'title': o.text}
+            for o in html.cssselect('select[name=sorozatid] > option')[1:]]
+    cache_file = open(cache_path, 'w')
+    json.dump(sorozatok, cache_file)
+else:
+    cache_file = open(cache_path, 'r')
+    sorozatok  = json.load(cache_file)
 
 if args:
     cim = ' '.join(args)
 else:
     cim = raw_input('cim: ')
 
-baseurl = 'http://hosszupuskasub.com/'
-html    = getpage(baseurl)
-
-sorozatok = [{'id': o.get('value'), 'title': o.text} for o in html.cssselect('select[name=sorozatid] > option')[1:]]
 
 if exact:
     hits = filter(lambda x: cim.lower() == x['title'].lower(), sorozatok)

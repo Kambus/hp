@@ -3,15 +3,8 @@
 from lxml.html import fromstring, tostring
 from urllib2 import urlopen
 import sys, os, re
-import curses
+import curses, getopt
 import tempfile, zipfile
-
-if 1 < len(sys.argv):
-    cim = ' '.join(sys.argv[1:])
-else:
-    cim = raw_input('cim: ')
-
-baseurl = 'http://hosszupuskasub.com/'
 
 rarr = re.compile(r"""(?P<date>\d{4}-\d{2}-\d{2})    # date
                    \s+                               # seperator
@@ -172,7 +165,7 @@ class Root(Win):    #{{{
         self.scr.keypad(0);
         curses.echo()
         curses.endwin()
-        sys.exit()
+        sys.exit(0)
 #}}}
 
 class SubWin(Win):  #{{{
@@ -281,14 +274,40 @@ def hpsearch(q, s):
         hits['and'] = True
     return len(words) <= len(hits)
 
-html = getpage(baseurl)
 
-sorozatok =[{'id': o.get('value'), 'title': o.text} for o in html.cssselect('select[name=sorozatid] > option')[1:]]
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "de")
+except:
+    print str(err)
+    sys.exit(2)
 
-hits = filter(lambda x: hpsearch(cim, x['title']), sorozatok)
+debug = None
+exact = None
+for o, a in opts:
+    if o == '-d':
+        debug = True
+    elif o == '-e':
+        exact = True
 
-# for hit in hits:
-#     print "%s --> %s" % (hit['title'], hit['id'])
+if args:
+    cim = ' '.join(args)
+else:
+    cim = raw_input('cim: ')
+
+baseurl = 'http://hosszupuskasub.com/'
+html    = getpage(baseurl)
+
+sorozatok = [{'id': o.get('value'), 'title': o.text} for o in html.cssselect('select[name=sorozatid] > option')[1:]]
+
+if exact:
+    hits = filter(lambda x: cim.lower() == x['title'].lower(), sorozatok)
+else:
+    hits = filter(lambda x: hpsearch(cim, x['title']), sorozatok)
+
+if debug:
+    for hit in hits:
+        print "%s --> %s" % (hit['title'], hit['id'])
+    sys.exit(0)
 
 if not hits:
     print "Nincs talalat a kovetkezo kifejezesre:", cim
